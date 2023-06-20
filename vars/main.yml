@@ -1,0 +1,17 @@
+---
+nextcloud_document_root: "{{ nextcloud_www_folder }}/nextcloud"
+nextcloud_protocol: "{{ 'https' if nextcloud_enable_ssl else 'http' }}"
+nextcloud_occ_command: php --define apc.enable_cli=1 {{ nextcloud_document_root }}/occ
+nextcloud_recommended_apps:
+  - calendar
+  - contacts
+  - mail
+  - richdocuments
+  - notes
+  - spreed
+nextcloud_suggested_apps:
+  - tasks
+  - deck
+  - forms
+  - groupfolders
+  - recognize

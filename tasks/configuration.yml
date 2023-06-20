@@ -1,0 +1,86 @@
+---
+- name: Check if nextcloud is installed
+  stat:
+    path: "{{ nextcloud_document_root }}/config/CAN_INSTALL"
+  register: _nextcloud_CAN_INSTALL
+
+- name: "Copy default nextcloud config file to {{ nextcloud_document_root }}/config/config.php"
+  template:
+    src: default-config.php.j2
+    dest: "{{ nextcloud_document_root }}/config/config.php"
+    owner: www-data
+    group: www-data
+    mode: 0640
+  when: _nextcloud_CAN_INSTALL.stat.exists
+
+- name: Run occ maintenance:install
+  become: true
+  become_user: www-data
+  command:
+    cmd: >
+      {{ nextcloud_occ_command }} maintenance:install -vv
+        --database='pgsql'
+        --database-name='{{ nextcloud_database_name }}'
+        --database-user='{{ nextcloud_database_username }}'
+        --database-pass='{{ nextcloud_database_password }}'
+        --admin-user='{{ nextcloud_admin_username }}'
+        --admin-pass='{{ nextcloud_admin_password }}'
+        --data-dir='{{ nextcloud_data_directory }}'
+    chdir: "{{ nextcloud_document_root }}"
+    removes: "{{ nextcloud_document_root }}/config/CAN_INSTALL"
+  when: _nextcloud_CAN_INSTALL.stat.exists
+  register: _nextcloud_occ_install
+
+- name: Print occ install command output
+  debug:
+    msg: "{{ _nextcloud_occ_install.stdout }}"
+  when: _nextcloud_CAN_INSTALL.stat.exists
+
+- name: Get current trusted domains
+  become: true
+  become_user: www-data
+  command:
+    cmd: "{{ nextcloud_occ_command }} config:system:get trusted_domains"
+    chdir: "{{ nextcloud_document_root }}"
+  changed_when: false
+  register: _nextcloud_current_trusted_domains
+
+- block:
+    - name: Reset trusted domains
+      become: true
+      become_user: www-data
+      command:
+        cmd: "{{ nextcloud_occ_command }} config:system:delete trusted_domains"
+        chdir: "{{ nextcloud_document_root }}"
+
+    - name: Set trusted domains
+      become: true
+      become_user: www-data
+      command:
+        cmd: "{{ nextcloud_occ_command }} config:system:set trusted_domains {{ i }} --value='{{ item }}'"
+        chdir: "{{ nextcloud_document_root }}"
+      loop: "{{ nextcloud_trusted_domains }}"
+      loop_control:
+        index_var: i
+  when: _nextcloud_current_trusted_domains.stdout_lines != nextcloud_trusted_domains
+
+- name: Install apps
+  become: true
+  become_user: www-data
+  command:
+    cmd: "{{ nextcloud_occ_command }} app:install {{ item }}"
+    chdir: "{{ nextcloud_document_root }}"
+  register: _
+  failed_when: _.rc > 0 and not _.stdout.endswith("already installed")
+  changed_when: _.rc == 0 and not _.stdout.endswith("already installed")
+  ignore_errors: true
+  loop: "{{ (nextcloud_recommended_apps if nextcloud_install_recommended_apps else [])
+          + (nextcloud_suggested_apps   if nextcloud_install_suggested_apps   else [])
+          + nextcloud_apps }}"
+
+- name: Setup cron job
+  cron:
+    name: Nextcloud cron
+    user: www-data
+    minute: "*/5"
+    job: php -f {{ nextcloud_document_root }}/cron.php --define apc.enable_cli=1

@@ -1,0 +1,38 @@
+{% if nextcloud_enable_ssl %}
+<VirtualHost *:80>
+	ServerName {{ nextcloud_domain_name }}
+	Redirect permanent / https://{{ nextcloud_domain_name }}/
+</VirtualHost>
+{% endif %}
+
+<VirtualHost *:{{ 443 if nextcloud_enable_ssl else 80 }}>
+	ServerName  {{ nextcloud_domain_name }}
+	DocumentRoot {{ nextcloud_document_root }}
+
+	php_value memory_limit {{ nextcloud_php_memory_limit }}
+	php_value opcache.enable 1
+	php_value opcache.save_comments 1
+	php_value opcache.interned_strings_buffer {{ nextcloud_php_opcache_strings_buffer }}
+	php_value opcache.revalidate_freq {{ nextcloud_php_opcache_revalidate_freq }}
+{% if nextcloud_php_opcache_enable_jit %}
+	php_value opcache.jit 1255
+	php_value opcache.jit_buffer_size 128M
+{% endif %}
+
+	<Directory {{ nextcloud_document_root }}>
+		Require all granted
+		AllowOverride All
+		Options FollowSymLinks MultiViews
+
+		<IfModule mod_dav.c>
+			Dav off
+		</IfModule>
+	</Directory>
+
+{% if nextcloud_enable_ssl and nextcloud_enable_hsts %}
+	<IfModule mod_headers.c>
+		Header always set Strict-Transport-Security "max-age=15552000"
+	</IfModule>
+{% endif %}
+
+</VirtualHost>

@@ -1,0 +1,34 @@
+---
+# Database
+nextcloud_database_name: nextcloud
+nextcloud_database_username: nextcloud
+nextcloud_database_password: nextcloud
+
+# Default Nextcloud admin credentials
+nextcloud_admin_username: admin
+nextcloud_admin_password: nextcloud
+
+# Download URL and destination
+nextcloud_download_url: https://download.nextcloud.com/server/releases/latest.tar.bz2
+nextcloud_checksum_url: "sha256:{{ nextcloud_download_url }}.sha256"
+nextcloud_download_path: /tmp/nextcloud.tar.bz2
+
+# Webserver settings
+nextcloud_domain_name: nextcloud.local
+nextcloud_www_folder: /var/www
+nextcloud_enable_ssl: no
+nextcloud_enable_hsts: yes
+
+# PHP settings
+nextcloud_php_memory_limit: 1G
+nextcloud_php_opcache_strings_buffer: 16
+nextcloud_php_opcache_revalidate_freq: 2
+nextcloud_php_opcache_enable_jit: no
+
+# Nextcloud configuration
+nextcloud_data_directory: "{{ nextcloud_document_root }}/data"
+nextcloud_trusted_domains: ["{{ nextcloud_domain_name }}"]
+nextcloud_default_phone_region:
+nextcloud_install_recommended_apps: yes
+nextcloud_install_suggested_apps: no
+nextcloud_apps: []

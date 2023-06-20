@@ -1,0 +1,81 @@
+---
+- name: Start and enable Apache and PostgreSQL
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - apache2
+    - postgresql
+
+- name: Create nextcloud database user
+  become: true
+  become_user: postgres
+  postgresql_user:
+    name: "{{ nextcloud_database_username }}"
+    password: "{{ nextcloud_database_password }}"
+    state: present
+
+- name: Create nextcloud database
+  become: true
+  become_user: postgres
+  postgresql_db:
+    name: "{{ nextcloud_database_name }}"
+    owner: "{{ nextcloud_database_username }}"
+    state: present
+
+- name: Enable required Apache modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rewrite
+    - headers
+    - env
+    - dir
+    - mime
+    - ssl
+  notify: restart apache2
+
+- name: Copy nextcloud virtual host config file
+  template:
+    src: nextcloud.conf.j2
+    dest: /etc/apache2/sites-available/nextcloud.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: reload apache2
+
+- name: Enable nextcloud site
+  command:
+    cmd: a2ensite nextcloud
+    creates: /etc/apache2/sites-enabled/nextcloud.conf
+  notify: reload apache2
+
+- name: Check for existing Nextcloud installation
+  stat:
+    path: "{{ nextcloud_document_root }}"
+  register: _nextcloud_docroot_check
+
+- block:
+    - name: "Download nextcloud to {{ nextcloud_download_path }}"
+      get_url:
+        url: "{{ nextcloud_download_url }}"
+        dest: "{{ nextcloud_download_path }}"
+        checksum: "{{ nextcloud_checksum_url }}"
+    - name: "Extract nextcloud to {{ nextcloud_www_folder }}"
+      unarchive:
+        src: "{{ nextcloud_download_path }}"
+        dest: "{{ nextcloud_www_folder }}"
+        owner: www-data
+        group: www-data
+        remote_src: yes
+        creates: "{{ nextcloud_www_folder }}/nextcloud"
+  when: not _nextcloud_docroot_check.stat.exists
+
+- name: "Create data folder {{ nextcloud_data_directory }} and set owner and group"
+  file:
+    path: "{{ nextcloud_data_directory }}"
+    state: directory
+    owner: www-data
+    group: www-data
