@@ -64,6 +64,11 @@
         index_var: i
   when: _nextcloud_current_trusted_domains.stdout_lines != nextcloud_trusted_domains
 
+- name: Set configuration variables
+  include_tasks: set-config.yml
+  with_dict: "{{ nextcloud_config }}"
+  when: item.value | length > 0
+
 - name: Install apps
   become: true
   become_user: www-data

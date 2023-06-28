@@ -1,0 +1,17 @@
+- name: Get config value of {{ item.key }}
+  become: true
+  become_user: www-data
+  command:
+    cmd: "{{ nextcloud_occ_command }} config:system:get {{ item.key }}"
+    chdir: "{{ nextcloud_document_root }}"
+  register: _value
+  changed_when: false
+  failed_when: false
+
+- name: Set config value of {{ item.key }} to {{ item.value }}
+  become: true
+  become_user: www-data
+  command:
+    cmd: "{{ nextcloud_occ_command }} config:system:set {{ item.key }} --value='{{ item.value }}'"
+    chdir: "{{ nextcloud_document_root }}"
+  when: _value.stdout != item.value

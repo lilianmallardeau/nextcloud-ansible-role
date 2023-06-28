@@ -1,8 +1,5 @@
 <?php
 $CONFIG = array (
-{% if nextcloud_default_phone_region %}
-  'default_phone_region' => '{{ nextcloud_default_phone_region }}',
-{% endif %}
   'overwrite.cli.url' => '{{ nextcloud_protocol }}://{{ nextcloud_domain_name }}',
   'overwriteprotocol' => '{{ nextcloud_protocol }}',
   'htaccess.RewriteBase' => '/',
