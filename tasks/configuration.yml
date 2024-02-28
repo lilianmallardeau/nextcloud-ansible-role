@@ -79,8 +79,8 @@
   failed_when: _.rc > 0 and not _.stdout.endswith("already installed")
   changed_when: _.rc == 0 and not _.stdout.endswith("already installed")
   ignore_errors: true
-  loop: "{{ (nextcloud_recommended_apps if nextcloud_install_recommended_apps else [])
-          + (nextcloud_suggested_apps   if nextcloud_install_suggested_apps   else [])
+  loop: "{{ (nextcloud_install_recommended_apps | ternary(nextcloud_recommended_apps, []))
+          + (nextcloud_install_suggested_apps   | ternary(nextcloud_suggested_apps,   []))
           + nextcloud_apps }}"
 
 - name: Setup cron job

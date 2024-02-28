@@ -1,6 +1,6 @@
 ---
 nextcloud_document_root: "{{ nextcloud_www_folder }}/nextcloud"
-nextcloud_protocol: "{{ 'https' if nextcloud_enable_ssl else 'http' }}"
+nextcloud_protocol: "{{ nextcloud_enable_ssl | ternary('https', 'http') }}"
 nextcloud_occ_command: php --define apc.enable_cli=1 {{ nextcloud_document_root }}/occ
 nextcloud_config:
   default_phone_region: "{{ nextcloud_default_phone_region }}"
